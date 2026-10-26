@@ -63,7 +63,14 @@ try {
   $env:PSModulePath="$env:SystemRoot\System32\WindowsPowerShell\v1.0\Modules"
   $process=Start-Process -FilePath "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -ArgumentList @('-NoProfile','-File',$script,'-CiProfile',$profilePath.ToString()) -Credential $credential -LoadUserProfile -WorkingDirectory $source -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $root 'stdout.txt') -RedirectStandardError (Join-Path $root 'stderr.txt')
 } finally { $env:PSModulePath=$bridgeOldModules }
-if(-not $process.WaitForExit(1200000)){Stop-Process -Id $process.Id -Force;throw 'CI standard-user validation timed out.'}
-Get-Content -LiteralPath (Join-Path $root 'stdout.txt')
-Get-Content -LiteralPath (Join-Path $root 'stderr.txt')
+$deadline=[DateTime]::UtcNow.AddMinutes(20)
+$readLines=@{ 'stdout.txt'=0; 'stderr.txt'=0 }
+do {
+  $done=$process.WaitForExit(5000)
+  foreach($logName in @('stdout.txt','stderr.txt')) {
+    $lines=@(Get-Content -LiteralPath (Join-Path $root $logName) -ErrorAction SilentlyContinue)
+    if($lines.Count -gt $readLines[$logName]) { $lines | Select-Object -Skip $readLines[$logName]; $readLines[$logName]=$lines.Count }
+  }
+  if([DateTime]::UtcNow -gt $deadline){Stop-Process -Id $process.Id -Force;throw 'CI standard-user validation timed out.'}
+} while(-not $done)
 if($process.ExitCode -ne 0){throw 'Standard-user validation failed.'}
