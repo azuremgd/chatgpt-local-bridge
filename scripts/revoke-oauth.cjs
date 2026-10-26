@@ -38,7 +38,7 @@ async function revokeRuntime(runtime) {
     // Conservatively reject another installation rather than killing it.
     const powershell=path.join(process.env.SystemRoot,'System32','WindowsPowerShell','v1.0','powershell.exe');
     const status=execFileSync(powershell,['-NoProfile','-NonInteractive','-Command',
-      "$ErrorActionPreference='Stop'; $running=@(Get-CimInstance Win32_Process | Where-Object { $_.Name -match '^(node|devspace)(\\.exe)?$' -and ($_.Name -match '^devspace' -or $_.CommandLine -match '(?i)[\\\\/]devspace[\\\\/]dist[\\\\/]cli\\.js(?:[\\s\"\x27]|$)') }); if($running.Count){'running'}else{'stopped'}"],
+      "$ErrorActionPreference='Stop'; $running=@(Get-CimInstance Win32_Process | Where-Object { $_.Name -match '^(node|devspace)(\\.exe)?$' -and ($_.Name -match '^devspace' -or $_.CommandLine -match '(?i)[\\\\/]devspace[\\\\/]dist[\\\\/]cli\\.js(?:[\\s\"]|$)') }); if($running.Count){'running'}else{'stopped'}"],
     {windowsHide:true,encoding:'utf8',timeout:15000,env:minimalEnvironment()}).trim();
     if(status!=='stopped') throw Error('Stop all DevSpace serve processes before revoking OAuth. No external process was stopped.');
     secureRuntime(runtime);
