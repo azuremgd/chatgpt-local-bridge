@@ -4,7 +4,7 @@ const net=require('node:net');
 const {createRequire}=require('node:module');
 const {execFileSync}=require('node:child_process');
 const {secureRuntime}=require('../runtime-security.cjs');
-const {runtimeHome,loadSettings,assertDevSpaceVersion,minimalEnvironment}=require('../installation.cjs');
+const {runtimeHome,loadSettings,assertDevSpaceVersion,windowsPowerShellEnvironment}=require('../installation.cjs');
 
 function revokeDatabase(filename,Database) {
   const db=new Database(filename,{fileMustExist:true,timeout:1000});
@@ -39,7 +39,7 @@ async function revokeRuntime(runtime) {
     const powershell=path.join(process.env.SystemRoot,'System32','WindowsPowerShell','v1.0','powershell.exe');
     const status=execFileSync(powershell,['-NoProfile','-NonInteractive','-Command',
       "$ErrorActionPreference='Stop'; $running=@(Get-CimInstance Win32_Process | Where-Object { $_.Name -match '^(node|devspace)(\\.exe)?$' -and ($_.Name -match '^devspace' -or $_.CommandLine -match '(?i)[\\\\/]devspace[\\\\/]dist[\\\\/]cli\\.js(?:[\\s\"]|$)') }); if($running.Count){'running'}else{'stopped'}"],
-    {windowsHide:true,encoding:'utf8',timeout:15000,env:minimalEnvironment()}).trim();
+    {windowsHide:true,encoding:'utf8',timeout:15000,env:windowsPowerShellEnvironment()}).trim();
     if(status!=='stopped') throw Error('Stop all DevSpace serve processes before revoking OAuth. No external process was stopped.');
     secureRuntime(runtime);
     const filename=path.join(state,'devspace.sqlite');

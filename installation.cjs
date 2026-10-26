@@ -39,4 +39,9 @@ function minimalEnvironment(source = process.env) {
   for (const [key, value] of Object.entries(source)) if (allowed.has(key.toLowerCase())) env[key.toLowerCase() === 'path' ? 'PATH' : key] = value;
   return env;
 }
-module.exports = { SUPPORTED_DEVSPACE, runtimeHome, publicOrigin, loadSettings, assertDevSpaceVersion, minimalEnvironment };
+function windowsPowerShellEnvironment(source=process.env) {
+  const env=minimalEnvironment(source);
+  env.PSModulePath=path.join(env.SystemRoot || env.SYSTEMROOT || 'C:\\Windows','System32','WindowsPowerShell','v1.0','Modules');
+  return env;
+}
+module.exports = { SUPPORTED_DEVSPACE, runtimeHome, publicOrigin, loadSettings, assertDevSpaceVersion, minimalEnvironment, windowsPowerShellEnvironment };

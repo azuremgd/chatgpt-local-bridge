@@ -1,7 +1,7 @@
 const path = require('node:path');
 const fs = require('node:fs');
 const {execFileSync} = require('node:child_process');
-const {minimalEnvironment} = require('./installation.cjs');
+const {windowsPowerShellEnvironment} = require('./installation.cjs');
 
 function secureRuntime(runtime, create = false) {
   if (process.platform !== 'win32') throw Error('Runtime security requires Windows.');
@@ -21,8 +21,9 @@ function secureRuntime(runtime, create = false) {
   try {
     execFileSync(powershell, ['-NoProfile','-NonInteractive','-File',path.join(__dirname,'scripts','RuntimeSecurity.ps1'),
       '-RuntimeDirectory',runtime,'-SourceDirectory',__dirname,'-Mode',create ? 'Create' : 'Check'],
-    {windowsHide:true,encoding:'utf8',timeout:30000,env:minimalEnvironment(),stdio:['ignore','pipe','pipe']});
+    {windowsHide:true,encoding:'utf8',timeout:30000,env:windowsPowerShellEnvironment(),stdio:['ignore','pipe','pipe']});
   } catch (error) {
+    if(error.code==='ETIMEDOUT') throw Error('Runtime security check timed out; no permission check was bypassed.');
     // Do not return PowerShell's source/stack output, which may include private paths.
     const match = String(error.stderr || '').match(/BRIDGE_SECURITY: ([^\r\n]+)/);
     throw Error(match ? match[1] : 'Runtime security check failed. Use an ordinary Windows session and a new private directory.');

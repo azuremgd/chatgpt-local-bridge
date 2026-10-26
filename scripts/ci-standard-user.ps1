@@ -44,6 +44,7 @@ $env:GIT_CONFIG_COUNT='1'
 $env:GIT_CONFIG_KEY_0='safe.directory'
 $env:GIT_CONFIG_VALUE_0=$PWD.Path
 function Run([scriptblock]$command){ & $command; if($LASTEXITCODE -ne 0){throw 'CI command failed.'} }
+Run { node.exe tests/windows-preflight.cjs }
 Run { npm.cmd ci }
 $deps=Join-Path $env:USERPROFILE 'BridgeTestDependencies'
 Run { npm.cmd install --prefix $deps --no-audit --no-fund --foreground-scripts --loglevel info --fetch-timeout=60000 --fetch-retries=1 @waishnav/devspace@1.0.8 }

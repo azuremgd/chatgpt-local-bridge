@@ -8,7 +8,7 @@ const { spawn, execFile } = require('node:child_process');
 const { promisify } = require('node:util');
 const exec = promisify(execFile);
 const { sameRoots, redact, summarize, validateRoot, doctorHealthy } = require('./core.cjs');
-const { publicOrigin, loadSettings, assertDevSpaceVersion, minimalEnvironment } = require('./installation.cjs');
+const { publicOrigin, loadSettings, assertDevSpaceVersion, minimalEnvironment, windowsPowerShellEnvironment } = require('./installation.cjs');
 const { secureRuntime } = require('./runtime-security.cjs');
 const { boundedLog } = require('./bounded-log.cjs');
 const delay = ms => new Promise(r => setTimeout(r, ms));
@@ -113,7 +113,7 @@ class Service extends EventEmitter {
     };
   }
   async ps(command, timeout = 15000) {
-    return exec(this.powershell, ['-NoProfile', '-NonInteractive', '-Command', command], { windowsHide: true, timeout, maxBuffer: 512 * 1024, encoding: 'utf8' });
+    return exec(this.powershell, ['-NoProfile', '-NonInteractive', '-Command', command], { windowsHide: true, timeout, maxBuffer: 512 * 1024, encoding: 'utf8', env:windowsPowerShellEnvironment() });
   }
   async inspect() {
     if (this.desired || this.busy) return;

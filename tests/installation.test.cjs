@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
-const {publicOrigin,minimalEnvironment,loadSettings,runtimeHome} = require('../installation.cjs');
+const {publicOrigin,minimalEnvironment,loadSettings,runtimeHome,windowsPowerShellEnvironment} = require('../installation.cjs');
 const {validateRoot,doctorHealthy} = require('../core.cjs');
 const {install,prepare} = require('../scripts/setup.cjs');
 const {findings} = require('../scripts/privacy-check.cjs');
@@ -23,6 +23,12 @@ test('doctor success requires its component checks, not only an exit code',()=>{
 test('child process environment does not forward parent provider or tunnel secrets',()=>{
   const env=minimalEnvironment({Path:'C:\\Windows',SystemRoot:'C:\\Windows',OPENAI_API_KEY:'synthetic',TUNNEL_TOKEN:'synthetic',AWS_SECRET_ACCESS_KEY:'synthetic',DEVSPACE_OAUTH_OWNER_TOKEN:'synthetic',NODE_OPTIONS:'--inspect'});
   assert.deepEqual(env,{PATH:'C:\\Windows',SystemRoot:'C:\\Windows'});
+});
+
+test('Windows PowerShell searches only its built-in module directory',()=>{
+  const env=windowsPowerShellEnvironment({SystemRoot:'C:\\Windows',PSModulePath:'D:\\UntrustedModules',NODE_OPTIONS:'--inspect'});
+  assert.equal(env.PSModulePath,'C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\Modules');
+  assert.equal(env.NODE_OPTIONS,undefined);
 });
 test('runtime defaults outside source; relative overrides rejected',()=>{
   assert.equal(runtimeHome({},'C:\\Users\\example'),path.resolve('C:\\Users\\example\\DevSpaceBridge'));
