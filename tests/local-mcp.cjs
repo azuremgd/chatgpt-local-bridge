@@ -4,6 +4,7 @@ const path=require('node:path');
 const net=require('node:net');
 const {createHash,randomBytes}=require('node:crypto');
 const {execFileSync}=require('node:child_process');
+const {createRequire}=require('node:module');
 const {runtimeFixture,removeFixture}=require('./fixtures.cjs');
 const {minimalEnvironment}=require('../installation.cjs');
 const {Service,probe}=require('../service.cjs');
@@ -60,6 +61,21 @@ const {doctorHealthy}=require('../core.cjs');
     assert.ok(listed.tools.some(tool=>tool.name==='open_workspace'));
     const opened=await rpc(3,'tools/call',{name:'open_workspace',arguments:{path:path.join(runtime,'workspace')}});
     assert.notEqual(opened.isError,true,'open test workspace');
+    if(process.env.BRIDGE_TEST_REVOKE_RUNTIME==='1') {
+      await service.stopInternal();
+      const Database=createRequire(cli)('better-sqlite3');
+      const filename=path.join(runtime,'state','devspace','devspace.sqlite');
+      const countSessions=()=>{const db=new Database(filename);try{return db.prepare('SELECT count(*) AS n FROM workspace_sessions').get().n;}finally{db.close();}};
+      const before=countSessions();assert.ok(before>0);
+      const result=JSON.parse(execFileSync(process.execPath,[path.resolve(__dirname,'..','scripts','revoke-oauth.cjs'),'--all'],{encoding:'utf8',windowsHide:true,env:{...minimalEnvironment(),DEVSPACE_BRIDGE_HOME:runtime}}));
+      assert.deepEqual(result,{accessTokens:1,refreshTokens:1,clients:1});assert.equal(countSessions(),before);
+      service.launch('devspace');
+      for(let i=0;i<30;i++){if((await probe(local+'/healthz',200)).ok)break;await new Promise(resolve=>setTimeout(resolve,300));}
+      assert.equal((await fetch(local+'/mcp',{headers:{Authorization:'Bearer '+tokens.access_token}})).status,401);
+      const oldRefresh=await fetch(endpoint(discovery.token_endpoint),{method:'POST',body:new URLSearchParams({grant_type:'refresh_token',client_id:client.client_id,refresh_token:tokens.refresh_token,resource:parameters.resource})});
+      assert.ok([400,401].includes(oldRefresh.status));
+      console.log('Offline revocation CLI: PASS (both token types rejected after process restart; workspace sessions preserved)');
+    }
     console.log('Local MCP: PASS (doctor, 401, discovery, Owner Password + PKCE, tools/list, open_workspace; synthetic data only)');
   } finally {if(service) await service.stopInternal();removeFixture(parent);}
 })().catch(error=>{console.error('Local MCP: FAIL ('+error.name+': '+error.message+'). No credentials printed.');process.exitCode=1;});
