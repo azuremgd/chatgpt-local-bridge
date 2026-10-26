@@ -45,12 +45,15 @@ $env:GIT_CONFIG_KEY_0='safe.directory'
 $env:GIT_CONFIG_VALUE_0=$PWD.Path
 function Run([scriptblock]$command){ & $command; if($LASTEXITCODE -ne 0){throw 'CI command failed.'} }
 Run { node.exe tests/windows-preflight.cjs }
+foreach($testFile in Get-ChildItem -LiteralPath tests -Filter '*.test.cjs') {
+  Run { node.exe --test --test-reporter=tap $testFile.FullName }
+}
 Run { npm.cmd ci }
 $deps=Join-Path $env:USERPROFILE 'BridgeTestDependencies'
 Run { npm.cmd install --prefix $deps --no-audit --no-fund --foreground-scripts --loglevel info --fetch-timeout=60000 --fetch-retries=1 @waishnav/devspace@1.0.8 }
 $env:BRIDGE_TEST_DEVSPACE_CLI=Join-Path $deps 'node_modules\@waishnav\devspace\dist\cli.js'
 $env:BRIDGE_TEST_REVOKE_RUNTIME='1'
-Run { npm.cmd test }
+Run { node.exe --test --test-reporter=tap tests/oauth.test.cjs }
 Run { npm.cmd run test:mcp }
 Run { npm.cmd run test:desktop }
 Run { npm.cmd run package }
