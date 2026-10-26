@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>DevSpace Bridge Console</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand"><div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M7 9h8v6H7zm10 8h8v6h-8zM15 12h6v5M11 15v5h6"/></svg></div><div><strong>DevSpace</strong><span>本地控制台</span></div></div>
+      <nav aria-label="主要导航">
+        <button class="nav-item selected" data-page="overview" aria-current="page"><span data-icon="dashboard"></span>连接总览</button>
+        <button class="nav-item" data-page="workspaces"><span data-icon="folder"></span>授权目录<span class="nav-count" id="nav-root-count">—</span></button>
+        <button class="nav-item" data-page="diagnostics"><span data-icon="pulse"></span>连接诊断</button>
+        <button class="nav-item" data-page="logs"><span data-icon="list"></span>运行记录</button>
+      </nav>
+      <div class="sidebar-bottom">
+        <button class="nav-item" data-page="settings"><span data-icon="settings"></span>设置</button>
+        <button class="nav-item" data-action="openGuide"><span data-icon="help"></span>使用说明<span class="external-arrow" data-icon="arrowUpRight"></span></button>
+        <div class="device"><span class="device-icon" data-icon="monitor"></span><div><strong id="device-name">本地电脑</strong><span>Windows · 仅本机管理</span></div><i class="device-dot"></i></div>
+      </div>
+    </aside>
+    <div class="workspace">
+      <header class="topbar"><div class="breadcrumb">工作空间 <span>/</span> <strong id="breadcrumb-title">连接总览</strong></div><div class="topbar-right"><span class="local-label"><i></i> 本机控制台</span><span class="version">v0.1</span></div></header>
+      <main id="main" tabindex="-1">
+        <section class="page active" id="page-overview" aria-labelledby="overview-heading">
+          <div class="page-heading"><div><h1 id="overview-heading">连接总览</h1><p>让本地项目，与你的 ChatGPT 保持连接。</p></div><button class="button secondary" data-action="diagnose"><span data-icon="refresh"></span><span class="check-button-label">检查连接</span></button></div>
+          <div class="external-notice" id="external-notice" hidden><span data-icon="info"></span><div><strong>服务由其他启动器运行</strong><p>请先在原启动器停止服务，再从这里启动。控制台不会停止外部进程。</p></div><button class="button small secondary" data-action="refresh">重新检测</button></div>
+          <div class="connection-panel">
+            <div class="connection-head"><div class="status-orb" id="status-orb"><span data-icon="link"></span></div><div class="status-copy"><div class="status-title-row"><h2 id="status-title">正在读取连接状态</h2><span class="badge neutral" id="connection-badge">检查中</span></div><p id="status-detail">正在检查本地服务与当前配置。</p></div><div class="connection-actions"><button class="button primary" id="primary-action" data-action="start"><span data-icon="play"></span><span>启动连接</span></button><button class="icon-button" id="restart-button" data-action="restart" title="重启连接" aria-label="重启连接" hidden><span data-icon="refresh"></span></button></div></div>
+            <div class="connection-flow" aria-label="连接链路">
+              <div class="flow-node"><div class="flow-icon" id="flow-local"><span data-icon="server"></span></div><strong>本地服务</strong><span id="flow-local-label">等待检查</span></div><div class="flow-connector"><span></span></div>
+              <div class="flow-node"><div class="flow-icon" id="flow-tunnel"><span data-icon="tunnel"></span></div><strong>安全隧道</strong><span id="flow-tunnel-label">等待检查</span></div><div class="flow-connector"><span></span></div>
+              <div class="flow-node"><div class="flow-icon" id="flow-public"><span data-icon="globe"></span></div><strong>公网入口</strong><span id="flow-public-label">尚未验证</span></div><div class="flow-connector"><span></span></div>
+              <div class="flow-node"><div class="flow-icon" id="flow-auth"><span data-icon="shield"></span></div><strong>OAuth 认证</strong><span id="flow-auth-label">尚未验证</span></div>
+            </div>
+            <div class="endpoint"><span class="endpoint-label"><span data-icon="link"></span>MCP 地址</span><code id="endpoint-url">正在读取…</code><button class="icon-button" data-action="copyEndpoint" title="复制 MCP 地址" aria-label="复制 MCP 地址"><span data-icon="copy"></span></button></div>
+          </div>
+          <div class="overview-bottom">
+            <section class="panel services-panel"><div class="section-heading"><h2>运行服务</h2><span class="muted" id="uptime">未运行</span></div><div class="service-row"><div class="service-symbol"><span data-icon="terminal"></span></div><div class="service-name"><strong>DevSpace</strong><span id="service-local-address">等待配置</span></div><span class="badge neutral" id="ds-badge">未检查</span></div><div class="service-row"><div class="service-symbol cloud"><span data-icon="cloud"></span></div><div class="service-name"><strong>Cloudflare Tunnel</strong><span id="service-tunnel-name">等待配置</span></div><span class="badge neutral" id="cf-badge">未检查</span></div><div class="service-foot"><span data-icon="shield"></span><span>Owner Password 与 OAuth 认证保留</span></div></section>
+            <section class="panel activity-panel"><div class="section-heading"><h2>最近动态</h2><button class="text-button" data-go="logs">全部记录 <span data-icon="arrowRight"></span></button></div><div id="recent-events" class="recent-events"><p class="empty-small">启动后，这里会显示连接活动。</p></div></section>
+          </div>
+          <div class="bottom-note"><span data-icon="info"></span><span>ChatGPT 的实际工具调用需在网页端确认。关闭此窗口后，控制台会继续在托盘运行。</span></div>
+        </section>
+        <section class="page" id="page-workspaces" aria-labelledby="workspaces-heading" hidden>
+          <div class="page-heading"><div><h1 id="workspaces-heading">授权目录</h1><p>选择允许 ChatGPT 访问的项目，权限覆盖目录内的子文件夹。</p></div><button class="button primary" data-action="addRoot"><span data-icon="plus"></span>添加目录</button></div>
+          <div id="pending-banner" class="pending-banner" hidden><span data-icon="refresh"></span><div><strong id="pending-title">授权配置已保存，等待应用</strong><p id="pending-detail">重启连接后，新的目录权限才会生效。</p></div><button class="button small" id="apply-roots" data-action="restart">应用并重启</button></div>
+          <div class="folder-table panel"><div class="folder-table-heading"><span>项目目录</span><span>权限状态</span><span>操作</span></div><div id="roots-list"></div></div>
+          <div class="permission-note"><span data-icon="shield"></span><div><h2>明确授权，按需访问</h2><p>移除授权不会删除文件。运行中的旧授权需重启后撤销。shell 工具使用当前 Windows 用户权限，目录白名单不等同于 shell 沙箱。</p></div></div>
+        </section>
+        <section class="page" id="page-diagnostics" aria-labelledby="diagnostics-heading" hidden>
+          <div class="page-heading"><div><h1 id="diagnostics-heading">连接诊断</h1><p>逐层检查连接，找到需要处理的环节。</p></div><button class="button primary" data-action="diagnose"><span data-icon="pulse"></span><span class="check-button-label">运行诊断</span></button></div>
+          <div class="diagnostic-summary"><div><span data-icon="pulse"></span><strong id="diag-summary-text">尚未执行完整检查</strong></div><span id="diag-time">点击运行诊断开始</span></div>
+          <div class="panel diagnostic-list" id="diagnostic-list"></div>
+          <div class="panel doctor-panel"><div class="section-heading"><h2>运行环境</h2><span class="badge neutral" id="doctor-badge">未检查</span></div><p class="muted">检查 Node.js、Git Bash、SQLite 与 DevSpace 配置。</p><details id="doctor-details"><summary>查看环境检查结果</summary><pre id="doctor-output">运行一次诊断后，结果会显示在这里。</pre></details></div>
+        </section>
+        <section class="page" id="page-logs" aria-labelledby="logs-heading" hidden>
+          <div class="page-heading"><div><h1 id="logs-heading">运行记录</h1><p>跟踪启动、退出和恢复过程，了解连接发生了什么。</p></div><button class="button secondary" data-action="openLogs"><span data-icon="folder"></span>打开日志目录</button></div>
+          <div class="log-toolbar"><div class="filter-group" role="group" aria-label="按日志级别筛选"><button class="filter active" data-filter="all">全部</button><button class="filter" data-filter="warn">警告</button><button class="filter" data-filter="error">错误</button></div><span class="muted">最多显示最近 100 条</span></div>
+          <div class="panel log-table"><div class="log-table-head"><span>时间</span><span>来源</span><span>事件</span></div><div id="logs-list"></div></div>
+        </section>
+        <section class="page" id="page-settings" aria-labelledby="settings-heading" hidden>
+          <div class="page-heading"><div><h1 id="settings-heading">设置</h1><p>保持可控、简单的本地运行方式。</p></div></div>
+          <div class="panel settings-panel"><div class="section-heading"><h2>运行偏好</h2></div><div class="setting-row"><div><strong>异常退出后自动恢复</strong><p>每项服务在 10 分钟内最多重试 3 次，连续失败后暂停。</p></div><button class="switch" id="recovery-switch" role="switch" aria-checked="true" aria-label="异常退出后自动恢复"><span></span></button></div><div class="setting-row"><div><strong>关闭窗口后留在托盘</strong><p>服务继续运行。需要停止时，使用托盘菜单或控制台的停止按钮。</p></div><span class="badge good">已启用</span></div><div class="setting-row"><div><strong>开机自启</strong><p>当前采用手动启动，双击桌面快捷方式打开控制台。</p></div><span class="badge neutral">未配置</span></div></div>
+          <div class="panel settings-panel"><div class="section-heading"><h2>本机配置</h2><button class="text-button" data-action="openRuntime">打开目录 <span data-icon="arrowUpRight"></span></button></div><dl class="config-list"><div><dt>运行目录</dt><dd id="runtime-path">—</dd></div><div><dt>配置文件</dt><dd id="config-path">—</dd></div><div><dt>认证方式</dt><dd>Owner Password + OAuth</dd></div><div><dt>管理界面</dt><dd>仅本机可用，不通过隧道公开</dd></div></dl></div>
+          <div class="quit-row"><span class="muted">退出控制台将停止由它管理的服务。</span><button class="button secondary danger-text" data-action="quit">退出控制台</button></div>
+        </section>
+      </main>
+      <footer class="statusbar"><div><i id="footer-dot"></i><span id="footer-status">正在读取状态</span></div><span id="footer-check">尚未执行公网检查</span></footer>
+    </div>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  <script src="app.js"></script>
+</body>
+</html>

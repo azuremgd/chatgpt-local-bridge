@@ -1,0 +1,7 @@
+# Documentation only. Replace placeholders locally, outside the source tree.
+tunnel: "00000000-0000-0000-0000-000000000000"
+credentials-file: "C:/Users/example/.cloudflared/TUNNEL-UUID.json"
+ingress:
+  - hostname: devspace.example.com
+    service: http://127.0.0.1:7676
+  - service: http_status:404

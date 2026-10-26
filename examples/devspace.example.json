@@ -1,0 +1,9 @@
+{
+  "host": "127.0.0.1",
+  "port": 7676,
+  "allowedRoots": ["D:\\Projects\\sample"],
+  "publicBaseUrl": "https://devspace.example.com",
+  "allowedHosts": ["devspace.example.com"],
+  "subagents": {"enabled": false, "providers": []},
+  "artifactsEnabled": false
+}
