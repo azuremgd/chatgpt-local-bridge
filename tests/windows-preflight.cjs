@@ -25,7 +25,7 @@ try {
     ['sensitive-paths',"$sensitive=@('AppData'"],
     ['ancestor-acl','$acl=[IO.Directory]::GetAccessControl($cursor)'],
     ['create-private','[IO.Directory]::CreateDirectory($runtimeFull,$privateAcl)'],
-    ['verify-private','$acl=if($item.PSIsContainer)'],
+    ['verify-private','$acl=if($isDirectory)'],
     ['scan-children','$pending=[Collections.Generic.Stack[string]]::new()']
   ]) instrumented=instrumented.replace(needle,`[Console]::WriteLine('Guard phase: ${phase} '+[DateTime]::UtcNow.ToString('o'));\n${needle}`);
   const diagnostic=path.join(os.tmpdir(),'bridge-guard-trace-'+randomUUID()+'.ps1');

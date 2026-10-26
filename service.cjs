@@ -119,7 +119,8 @@ class Service extends EventEmitter {
     if (this.desired || this.busy) return;
     const q = psQuote(this.tunnelConfig);
     const port = this.config().port;
-    const { stdout } = await this.ps(`$ErrorActionPreference='Stop'; $d=@(Get-NetTCPConnection -LocalPort ${port} -State Listen -ErrorAction SilentlyContinue); $t=@(Get-CimInstance Win32_Process -Filter "Name='cloudflared.exe'" | Where-Object { $_.CommandLine -and $_.CommandLine.Contains(${q}) }); [pscustomobject]@{devspace=if($d.Count){$d[0].OwningProcess}else{$null};tunnel=if($t.Count){$t[0].ProcessId}else{$null};supervisors=@()} | ConvertTo-Json -Compress`);
+    const netstat=psQuote(path.join(process.env.SystemRoot || 'C:\\Windows','System32','netstat.exe'));
+    const { stdout } = await this.ps(`$ErrorActionPreference='Stop'; $bridgeListener='null'; $bridgeTunnel='null'; foreach($line in (& ${netstat} -ano -p tcp)){ if($line -match '^\\s*TCP\\s+\\S+:${port}\\s+\\S+\\s+LISTENING\\s+(\\d+)\\s*$'){$bridgeListener=$Matches[1];break} }; if($LASTEXITCODE -ne 0){throw 'Listener inspection failed'}; [void][Reflection.Assembly]::LoadWithPartialName('System.Management'); $searcher=[System.Management.ManagementObjectSearcher]::new("SELECT ProcessId,CommandLine FROM Win32_Process WHERE Name='cloudflared.exe'"); try {foreach($process in $searcher.Get()){if($process.CommandLine -and $process.CommandLine.IndexOf(${q},[StringComparison]::OrdinalIgnoreCase) -ge 0){$bridgeTunnel=[string]$process.ProcessId;break}}} finally {$searcher.Dispose()}; [Console]::WriteLine('{"devspace":'+$bridgeListener+',"tunnel":'+$bridgeTunnel+',"supervisors":[]}')`);
     this.external = JSON.parse(stdout.trim());
     // External process configuration cannot be inferred from historical logs.
     this.activeRoots = [];

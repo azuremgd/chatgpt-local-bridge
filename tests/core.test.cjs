@@ -63,3 +63,18 @@ test('probe validates status and discovery payload', async () => {
     assert.equal((await probe(base,200,d=>d.issuer==='correct')).ok,true);
   } finally { await new Promise(r=>server.close(r)); }
 });
+
+test('external listener inspection identifies the owning process without taking ownership',async()=>{
+  const runtime=runtimeFixture();
+  const server=require('node:net').createServer(socket=>socket.destroy());
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  try {
+    fs.mkdirSync(path.join(runtime,'config'));fs.mkdirSync(path.join(runtime,'workspace'));
+    fs.writeFileSync(path.join(runtime,'config','config.json'),JSON.stringify({host:'127.0.0.1',port:server.address().port,publicBaseUrl:'https://devspace.example.com',allowedRoots:[path.join(runtime,'workspace')],allowedHosts:['devspace.example.com'],stateDir:path.join(runtime,'state','devspace'),worktreeRoot:path.join(runtime,'worktrees'),agentDir:path.join(runtime,'disabled-agents')}));
+    const service=new Service(runtime);
+    await service.inspect();
+    assert.equal(service.external.devspace,process.pid);
+    assert.equal(service.snapshot().managed,false);
+    assert.equal(server.listening,true);
+  } finally {await new Promise(resolve=>server.close(resolve));removeFixture(runtime);}
+});

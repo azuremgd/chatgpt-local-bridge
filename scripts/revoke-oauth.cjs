@@ -38,7 +38,7 @@ async function revokeRuntime(runtime) {
     // Conservatively reject another installation rather than killing it.
     const powershell=path.join(process.env.SystemRoot,'System32','WindowsPowerShell','v1.0','powershell.exe');
     const status=execFileSync(powershell,['-NoProfile','-NonInteractive','-Command',
-      "$ErrorActionPreference='Stop'; $running=@(Get-CimInstance Win32_Process | Where-Object { $_.Name -match '^(node|devspace)(\\.exe)?$' -and ($_.Name -match '^devspace' -or $_.CommandLine -match '(?i)[\\\\/]devspace[\\\\/]dist[\\\\/]cli\\.js(?:[\\s\"]|$)') }); if($running.Count){'running'}else{'stopped'}"],
+      "$ErrorActionPreference='Stop'; [void][Reflection.Assembly]::LoadWithPartialName('System.Management'); $searcher=[System.Management.ManagementObjectSearcher]::new(\"SELECT Name,CommandLine FROM Win32_Process WHERE Name='node.exe' OR Name='devspace.exe'\"); $running=$false; try { foreach($process in $searcher.Get()){ if($process.Name -match '^devspace' -or $process.CommandLine -match '(?i)[\\\\/]devspace[\\\\/]dist[\\\\/]cli\\.js(?:[\\s\"]|$)'){$running=$true} } } finally {$searcher.Dispose()}; if($running){[Console]::WriteLine('running')}else{[Console]::WriteLine('stopped')}"],
     {windowsHide:true,encoding:'utf8',timeout:15000,env:windowsPowerShellEnvironment()}).trim();
     if(status!=='stopped') throw Error('Stop all DevSpace serve processes before revoking OAuth. No external process was stopped.');
     secureRuntime(runtime);
