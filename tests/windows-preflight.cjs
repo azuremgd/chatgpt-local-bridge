@@ -17,10 +17,22 @@ try {
   console.log('Private runtime initialization milliseconds: '+(Date.now()-started));
 } catch(original) {
   // Trace only the synthetic fixture guard, never user configuration or auth.
-  const quote=value=>"'"+value.replace(/'/g,"''")+"'";
   const root=path.resolve(__dirname,'..');
-  const command=`Set-PSDebug -Trace 1; & ${quote(path.join(root,'scripts','RuntimeSecurity.ps1'))} -RuntimeDirectory ${quote(runtime)} -SourceDirectory ${quote(root)} -Mode Create`;
-  try {console.log(execFileSync(powershell,['-NoProfile','-NonInteractive','-EncodedCommand',Buffer.from(command,'utf16le').toString('base64')],{encoding:'utf8',windowsHide:true,timeout:45000,env:windowsPowerShellEnvironment()}).slice(-12000));}
-  catch(trace){console.log(String(trace.stdout||'').slice(-12000));}
+  let instrumented=fs.readFileSync(path.join(root,'scripts','RuntimeSecurity.ps1'),'utf8');
+  for(const [phase,needle] of [
+    ['identity','$identity=[Security.Principal.WindowsIdentity]::GetCurrent()'],
+    ['known-folder',"$profileDirectory=[Environment]::GetFolderPath('UserProfile')"],
+    ['sensitive-paths',"$sensitive=@('AppData'"],
+    ['ancestor-acl','$acl=Get-Acl -LiteralPath $cursor'],
+    ['create-private','[IO.Directory]::CreateDirectory($runtimeFull,$privateAcl)'],
+    ['verify-private','$acl=Get-Acl -LiteralPath $target'],
+    ['scan-children','$pending=[Collections.Generic.Stack[string]]::new()']
+  ]) instrumented=instrumented.replace(needle,`[Console]::WriteLine('Guard phase: ${phase}');\n${needle}`);
+  const diagnostic=path.join(os.tmpdir(),'bridge-guard-trace-'+randomUUID()+'.ps1');
+  fs.writeFileSync(diagnostic,instrumented,{flag:'wx'});
+  try {
+    console.log(execFileSync(powershell,['-NoProfile','-NonInteractive','-File',diagnostic,'-RuntimeDirectory',runtime,'-SourceDirectory',root,'-Mode','Create'],{encoding:'utf8',windowsHide:true,timeout:45000,env:windowsPowerShellEnvironment(),stdio:['ignore','pipe','pipe']}));
+  } catch(trace){console.log('Guard trace: '+JSON.stringify({stdout:String(trace.stdout||'').slice(-4000),stderr:String(trace.stderr||'').slice(-1000)}));}
+  finally {fs.unlinkSync(diagnostic);}
   throw original;
 } finally {if(fs.existsSync(runtime)) removeFixture(runtime);}
