@@ -24,7 +24,12 @@ $allowed=@($sid.Value,'S-1-5-18')
 $trustedAncestors=@($sid.Value,'S-1-5-18','S-1-5-32-544','S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464')
 $runtimeFull=FullPath $RuntimeDirectory
 $sourceFull=FullPath $SourceDirectory
-$userHome=FullPath ([Environment]::GetFolderPath('UserProfile'))
+$profileDirectory=[Environment]::GetFolderPath('UserProfile')
+if (-not $profileDirectory) {
+  $profileDirectory=(Get-ItemProperty -LiteralPath ('Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\'+$sid.Value) -Name ProfileImagePath).ProfileImagePath
+  $profileDirectory=[Environment]::ExpandEnvironmentVariables($profileDirectory)
+}
+$userHome=FullPath $profileDirectory
 if ($runtimeFull.Length -le 3 -or (ContainsPath $runtimeFull $userHome) -or (ContainsPath $runtimeFull $sourceFull) -or (ContainsPath $sourceFull $runtimeFull)) { Reject 'Runtime overlaps a protected root, home or source directory.' }
 $sensitive=@('AppData','.ssh','.aws','.azure','.cloudflared','.devspace','.codex','.gnupg','.kube') | ForEach-Object { Join-Path $userHome $_ }
 $sensitive+=@($env:SystemRoot,$env:ProgramFiles,${env:ProgramFiles(x86)},$env:ProgramData) | Where-Object { $_ }

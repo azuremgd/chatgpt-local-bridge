@@ -3,8 +3,34 @@ const assert=require('node:assert/strict');
 const path=require('node:path');
 const {pathToFileURL}=require('node:url');
 const {createRequire}=require('node:module');
+const fs=require('node:fs');
+const net=require('node:net');
+const {spawn,execFileSync}=require('node:child_process');
+const {once}=require('node:events');
 const {runtimeFixture,removeFixture}=require('./fixtures.cjs');
 const cli=process.env.BRIDGE_TEST_DEVSPACE_CLI;
+
+test('offline revocation refuses a DevSpace process before it starts listening',async()=>{
+  const {revokeRuntime}=require('../scripts/revoke-oauth.cjs');
+  const runtime=runtimeFixture();
+  let child;
+  try {
+    const packageDir=path.join(runtime,'devspace');fs.mkdirSync(path.join(packageDir,'dist'),{recursive:true});
+    fs.mkdirSync(path.join(runtime,'config'));fs.mkdirSync(path.join(runtime,'state','devspace'),{recursive:true});
+    fs.writeFileSync(path.join(packageDir,'package.json'),JSON.stringify({name:'@waishnav/devspace',version:'1.0.8'}));
+    const worker=path.join(packageDir,'dist','cli.js');fs.writeFileSync(worker,'setInterval(()=>{},1000)');
+    fs.writeFileSync(path.join(runtime,'bridge-settings.json'),JSON.stringify({schemaVersion:1,nodePath:process.execPath,devspaceCliPath:worker,cloudflaredPath:process.execPath,bashDirectory:runtime,tunnelName:'test'}));
+    const portProbe=net.createServer();await new Promise(resolve=>portProbe.listen(0,'127.0.0.1',resolve));
+    const port=portProbe.address().port;await new Promise(resolve=>portProbe.close(resolve));
+    fs.writeFileSync(path.join(runtime,'config','config.json'),JSON.stringify({port,stateDir:path.join(runtime,'state','devspace')}));
+    child=spawn(process.execPath,[worker],{windowsHide:true,stdio:'ignore'});await once(child,'spawn');
+    await assert.rejects(revokeRuntime(runtime),/Stop all DevSpace/);
+    assert.equal(fs.existsSync(path.join(runtime,'state','oauth-maintenance.lock')),false);
+  } finally {
+    if(child?.pid) {const closed=once(child,'close');execFileSync('taskkill.exe',['/PID',String(child.pid),'/T','/F'],{stdio:'pipe'});await closed;}
+    removeFixture(runtime);
+  }
+});
 
 test('revocation invalidates access and refresh after restart, preserving unrelated SQLite state', {skip:!cli}, async()=>{
   const {revokeDatabase}=require('../scripts/revoke-oauth.cjs');

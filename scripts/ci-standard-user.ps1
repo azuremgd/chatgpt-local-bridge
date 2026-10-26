@@ -30,11 +30,13 @@ Get-ChildItem -LiteralPath $env:GITHUB_WORKSPACE -Force | Where-Object { $_.Name
 if($LASTEXITCODE -ne 0){throw 'CI account ACL setup failed.'}
 $script=Join-Path $root 'run.ps1'
 @'
+param([Parameter(Mandatory=$true)][string]$CiProfile)
 $ErrorActionPreference='Stop'
-$env:USERPROFILE=[Environment]::GetFolderPath('UserProfile')
+$env:USERPROFILE=$CiProfile
 $env:HOME=$env:USERPROFILE
-$env:APPDATA=[Environment]::GetFolderPath('ApplicationData','Create')
-$env:LOCALAPPDATA=[Environment]::GetFolderPath('LocalApplicationData','Create')
+$env:APPDATA=Join-Path $CiProfile 'AppData\Roaming'
+$env:LOCALAPPDATA=Join-Path $CiProfile 'AppData\Local'
+New-Item -ItemType Directory -Path $env:APPDATA -Force | Out-Null
 $env:TEMP=Join-Path $env:LOCALAPPDATA 'Temp'
 $env:TMP=$env:TEMP
 New-Item -ItemType Directory -Path $env:TEMP -Force | Out-Null
@@ -58,7 +60,7 @@ Run { npm.cmd run privacy }
 $bridgeOldModules=$env:PSModulePath
 try {
   $env:PSModulePath="$env:SystemRoot\System32\WindowsPowerShell\v1.0\Modules"
-  $process=Start-Process -FilePath "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -ArgumentList @('-NoProfile','-File',$script) -Credential $credential -LoadUserProfile -WorkingDirectory $source -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $root 'stdout.txt') -RedirectStandardError (Join-Path $root 'stderr.txt')
+  $process=Start-Process -FilePath "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe" -ArgumentList @('-NoProfile','-File',$script,'-CiProfile',$profilePath.ToString()) -Credential $credential -LoadUserProfile -WorkingDirectory $source -WindowStyle Hidden -PassThru -RedirectStandardOutput (Join-Path $root 'stdout.txt') -RedirectStandardError (Join-Path $root 'stderr.txt')
 } finally { $env:PSModulePath=$bridgeOldModules }
 if(-not $process.WaitForExit(1200000)){Stop-Process -Id $process.Id -Force;throw 'CI standard-user validation timed out.'}
 Get-Content -LiteralPath (Join-Path $root 'stdout.txt')
