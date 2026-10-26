@@ -11,6 +11,18 @@ $account='BridgeCiUser'
 $password=ConvertTo-SecureString ('Bridge!'+[guid]::NewGuid().ToString('N')+'a9') -AsPlainText -Force
 $user=New-LocalUser -Name $account -Password $password -AccountNeverExpires
 Add-LocalGroupMember -SID 'S-1-5-32-545' -Member $user
+Add-Type @'
+using System;
+using System.Text;
+using System.Runtime.InteropServices;
+public static class BridgeCiProfile {
+  [DllImport("userenv.dll", CharSet=CharSet.Unicode)]
+  public static extern int CreateProfile(string sid, string user, StringBuilder path, uint size);
+}
+'@
+$profilePath=[Text.StringBuilder]::new(260)
+$profileResult=[BridgeCiProfile]::CreateProfile($user.SID.Value,$account,$profilePath,260)
+if($profileResult -ne 0){throw 'Could not provision the disposable CI user profile.'}
 $credential=[PSCredential]::new(($env:COMPUTERNAME+'\'+$account),$password)
 # Copy the clean checkout, including Git history for indexed-source checks.
 Get-ChildItem -LiteralPath $env:GITHUB_WORKSPACE -Force | Where-Object { $_.Name -notin @('node_modules','dist') } | ForEach-Object { Copy-Item -LiteralPath $_.FullName -Destination $source -Recurse -Force }
@@ -21,8 +33,8 @@ $script=Join-Path $root 'run.ps1'
 $ErrorActionPreference='Stop'
 $env:USERPROFILE=[Environment]::GetFolderPath('UserProfile')
 $env:HOME=$env:USERPROFILE
-$env:APPDATA=[Environment]::GetFolderPath('ApplicationData')
-$env:LOCALAPPDATA=[Environment]::GetFolderPath('LocalApplicationData')
+$env:APPDATA=[Environment]::GetFolderPath('ApplicationData','Create')
+$env:LOCALAPPDATA=[Environment]::GetFolderPath('LocalApplicationData','Create')
 $env:TEMP=Join-Path $env:LOCALAPPDATA 'Temp'
 $env:TMP=$env:TEMP
 New-Item -ItemType Directory -Path $env:TEMP -Force | Out-Null
