@@ -39,11 +39,12 @@ test('directory edits preserve unrelated configuration and guard last root', asy
     const project = path.join(temp, 'project'); fs.mkdirSync(project);
     const original = {host:'127.0.0.1',port:17676,allowedRoots:['E:\\Existing'], publicBaseUrl:'https://devspace.example.com', allowedHosts:['devspace.example.com'], subagents:{enabled:false}, custom:{preserve:true}};
     fs.writeFileSync(service.configPath, JSON.stringify(original));
-    await service.addRoot(project);
+    const canonicalProject = await service.addRoot(project);
     assert.deepEqual(service.config().custom, original.custom);
     assert.deepEqual(service.config().allowedHosts, original.allowedHosts);
     assert.equal(service.config().allowedRoots.length, 2);
-    await service.removeRoot(project);
+    assert.ok(service.config().allowedRoots.includes(canonicalProject));
+    await service.removeRoot(canonicalProject);
     await assert.rejects(service.removeRoot('E:\\Existing'));
     assert.deepEqual(service.config(), original);
     assert.throws(() => service.writeConfig('stale', original));
