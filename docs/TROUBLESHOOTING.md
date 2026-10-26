@@ -5,6 +5,9 @@
 | First-run message | Run the setup script in an ordinary PowerShell window, then reopen the console. |
 | Script or file cannot be found | Verify the complete actual path with `Test-Path`. Some packaged apps can virtualize AppData; use the dedicated ordinary user-profile runtime directory. Do not assume that a path seen by one app exists in another context. |
 | Existing runtime refused | Setup will not overwrite credentials. Inspect the existing directory and choose a new dedicated runtime if necessary. |
+| Runtime ACL or link rejected | Use a new dedicated directory under your ordinary user profile. Do not disable the guard, grant Everyone access, or automatically rewrite an existing directory's ACL. |
+| Elevated execution refused | Close the administrator terminal/app and open an ordinary Windows session. A normal filtered token is supported even if the account belongs to Administrators. |
+| OAuth revocation failed | Stop all DevSpace instances via their own launchers and follow [REVOKE.md](REVOKE.md). Do not assume a changed password revoked old tokens. |
 | DevSpace version rejected | Version 1.0.8 is supported. Install separately and pass its CLI path; do not overwrite another working installation blindly. |
 | Local port in use | Stop the existing service through its own launcher, or initialize with another port. The console does not kill external processes. |
 | Git Bash missing | Supply the folder containing `bash.exe` with `-BashDirectory`. |

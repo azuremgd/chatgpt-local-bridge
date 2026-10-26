@@ -3,6 +3,7 @@ const path = require('node:path');
 const os = require('node:os');
 const { validateRoot, within } = require('../core.cjs');
 const { publicOrigin, assertDevSpaceVersion } = require('../installation.cjs');
+const { secureRuntime } = require('../runtime-security.cjs');
 
 function prepare(input, home = os.homedir()) {
   if (process.platform !== 'win32') throw Error('This release supports Windows only.');
@@ -13,7 +14,7 @@ function prepare(input, home = os.homedir()) {
   const realParent = fs.realpathSync.native(path.dirname(runtime));
   const actualRuntime = path.join(realParent, path.basename(runtime));
   if (within(source, actualRuntime) || within(actualRuntime, source) || within(actualRuntime, home)) throw Error('Runtime resolves to a protected directory.');
-  if (fs.lstatSync(runtime).isSymbolicLink()) throw Error('Runtime cannot be a junction or symbolic link.');
+  if (fs.existsSync(runtime) && fs.lstatSync(runtime).isSymbolicLink()) throw Error('Runtime cannot be a junction or symbolic link.');
   if (!Number.isInteger(input.port) || input.port < 1024 || input.port > 65535) throw Error('Port must be between 1024 and 65535.');
   if (!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(input.tunnelId)) throw Error('Supply the named tunnel UUID, not a token.');
   for (const key of ['nodePath','devspaceCliPath','cloudflaredPath','bashDirectory','credentialsFile']) {
@@ -38,6 +39,7 @@ function prepare(input, home = os.homedir()) {
 }
 function install(input, home = os.homedir()) {
   const prepared = prepare(input, home);
+  secureRuntime(prepared.runtime, true);
   for (const dir of ['config','cloudflared','state','logs','workspace']) fs.mkdirSync(path.join(prepared.runtime,dir),{recursive:true});
   const write = (name,value) => fs.writeFileSync(path.join(prepared.runtime,name),typeof value === 'string' ? value : JSON.stringify(value,null,2)+'\n',{flag:'wx',mode:0o600});
   write('config/config.json',prepared.config);

@@ -5,14 +5,14 @@ const os = require('node:os');
 const { pathToFileURL } = require('node:url');
 const { Service } = require('./service.cjs');
 const { runtimeHome } = require('./installation.cjs');
+const { secureRuntime } = require('./runtime-security.cjs');
 
 const runtime = runtimeHome();
-if (!fs.existsSync(runtime)) {
-  fs.mkdirSync(runtime, { recursive: true });
-  fs.writeFileSync(path.join(runtime, '.bridge-runtime'), 'DevSpace Bridge runtime v1\n', {flag:'wx'});
-}
+try { secureRuntime(runtime, true); }
+catch (error) { dialog.showErrorBox('DevSpace Bridge 安全检查未通过', error.message); app.exit(1); }
 const appState = path.join(runtime, 'state', 'console');
 fs.mkdirSync(appState, { recursive: true });
+fs.mkdirSync(path.join(appState, 'crashes'), { recursive: true });
 app.setPath('userData', appState);
 app.setPath('crashDumps', path.join(appState, 'crashes'));
 app.setAppUserModelId('DevSpaceBridge.Console');
@@ -79,12 +79,18 @@ app.on('activate', show);
 
 async function invoke(command, payload) {
   if (!service) throw Error('控制台正在初始化，请稍后。');
+  if (['start','restart'].includes(command) && !service.shellRiskAccepted()) {
+    if (!await confirm('允许网页端使用此 Windows 账户的 Shell 权限？',
+      '项目白名单约束文件工具，不是 Shell 沙箱。Shell 可以读写当前 Windows 账户能访问的文件，包括账户自身的凭证。\n\n工具请求、返回的文件内容和命令输出会经 Cloudflare 传给 ChatGPT；不会因此自动上传整个项目。建议使用独立普通账户与系统权限限制。\n\n仅在你理解并接受这些权限时继续。本次确认会保存在本机。', '理解并继续')) return service.snapshot();
+    service.acknowledgeShellRisk();
+  }
   switch (command) {
     case 'state': return service.snapshot();
     case 'refresh': await service.inspect(); await service.poll(); break;
     case 'diagnose': await service.diagnose(); break;
     case 'start': await service.start(); setTimeout(() => service.diagnose().catch(() => {}), 2500); break;
     case 'stop': if (await confirm('停止网页端连接？', '正在进行的工具调用可能中断。你可以随时重新启动。', '停止连接')) await service.stop(); break;
+    case 'revokeOAuth': if (await confirm('撤销所有网页客户端授权？','将停止本控制台管理的连接，并清除全部 OAuth 访问令牌、刷新令牌和客户端注册。保留项目文件、Owner Password 和其他会话数据。随后需要在 ChatGPT 中重新添加并授权。若另一个 DevSpace 正在运行，操作会拒绝继续。','停止并撤销')) await service.revokeOAuth(); break;
     case 'restart': if (await confirm('应用配置并重启连接？', '服务会短暂断开，随后自动重新连接。', '应用并重启')) { await service.restart(); setTimeout(() => service.diagnose().catch(() => {}), 2500); } break;
     case 'takeover': throw Error('请在原启动器停止外部服务，再点击重新检测。控制台只停止自己启动的进程。');
     case 'addRoot': {

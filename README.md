@@ -23,6 +23,7 @@ flowchart LR
 - System tray operation; closing the window keeps the connection running.
 - Bounded crash recovery: at most three retries per service in ten minutes.
 - Local event history; no console telemetry or automatic log upload.
+- Private runtime ACL and path checks, first-start Shell acknowledgement, bounded raw logs and explicit OAuth revocation.
 - Keeps Owner Password, OAuth and an exact Host allowlist. No public administration endpoint and no automatic startup registration.
 
 ## Compatibility
@@ -55,7 +56,9 @@ To build an unpacked desktop application:
 npm run package
 ```
 
-The result is `dist/devspace-bridge-console-win32-x64/`. Keep that directory together. It includes `Setup.ps1`, `Create-Shortcut.ps1` and the desktop executable. Packaging explicitly copies source assets, never the user's runtime configuration, logs, project contents or credentials. It does not create or upload a release.
+The result is `dist/devspace-bridge-console-0.1.1-win32-x64/`. Keep that directory together. It includes `Setup.ps1`, `Create-Shortcut.ps1` and the desktop executable. Packaging explicitly copies source assets, never the user's runtime configuration, logs, project contents or credentials. It does not create or upload a release and refuses to overwrite an existing build.
+
+`npm run test:desktop` executes the real Electron main entry in a fresh private runtime. Pass a packaged executable to `node tests/desktop-smoke.cjs` to test the package. The OAuth integration test additionally requires `BRIDGE_TEST_DEVSPACE_CLI` pointing to a separately installed 1.0.8 CLI. A fresh runtime on an existing machine is not a clean-Windows installation test, and neither test proves an actual ChatGPT OAuth login/tool call.
 
 ## Security and privacy
 

@@ -9,6 +9,8 @@ const { promisify } = require('node:util');
 const exec = promisify(execFile);
 const { sameRoots, redact, summarize, validateRoot, doctorHealthy } = require('./core.cjs');
 const { publicOrigin, loadSettings, assertDevSpaceVersion, minimalEnvironment } = require('./installation.cjs');
+const { secureRuntime } = require('./runtime-security.cjs');
+const { boundedLog } = require('./bounded-log.cjs');
 const delay = ms => new Promise(r => setTimeout(r, ms));
 const psQuote = s => "'" + s.replace(/'/g, "''") + "'";
 const healthy = body => body?.ok === true && body?.name === 'devspace';
@@ -35,6 +37,7 @@ function probe(url, expected, parse) {
 class Service extends EventEmitter {
   constructor(runtime) {
     super();
+    secureRuntime(runtime);
     this.runtime = runtime;
     this.home = os.homedir();
     this.configPath = path.join(runtime, 'config', 'config.json');
@@ -56,8 +59,16 @@ class Service extends EventEmitter {
     this.polling = false; this.pollCount = 0; this.settings = { autoRecover: true };
     this.eventFile = path.join(runtime, 'state', 'console-events.json');
     this.settingsFile = path.join(runtime, 'state', 'console-settings.json');
+    this.consentFile = path.join(runtime, 'state', 'shell-consent.json');
     try { this.events = JSON.parse(fs.readFileSync(this.eventFile, 'utf8')).slice(-200); } catch {}
     try { this.settings.autoRecover = JSON.parse(fs.readFileSync(this.settingsFile, 'utf8')).autoRecover !== false; } catch {}
+  }
+  shellRiskAccepted() {
+    try { return JSON.parse(fs.readFileSync(this.consentFile,'utf8')).version === 1; } catch { return false; }
+  }
+  acknowledgeShellRisk() {
+    secureRuntime(this.runtime);
+    fs.writeFileSync(this.consentFile,JSON.stringify({version:1,acceptedAt:new Date().toISOString()}));
   }
   config() {
     if (!fs.existsSync(this.configPath)) throw Error('请先在 PowerShell 中运行 scripts/Initialize-Bridge.ps1 完成首次配置，再重新打开控制台。点击使用说明查看步骤。');
@@ -66,6 +77,9 @@ class Service extends EventEmitter {
     publicOrigin(value.publicBaseUrl);
     if (value.host !== '127.0.0.1' || !Number.isInteger(value.port) || value.port < 1024 || value.port > 65535) throw Error('服务必须监听 127.0.0.1，端口应为 1024–65535。');
     if (value.allowedHosts?.includes('*')) throw Error('不允许通配符 Host 白名单。');
+    for (const [key,relative] of [['stateDir','state/devspace'],['worktreeRoot','worktrees'],['agentDir','disabled-agents']]) {
+      if (typeof value[key]!=='string' || path.resolve(value[key]).toLowerCase()!==path.join(this.runtime,relative).toLowerCase()) throw Error('运行数据路径必须位于当前专用运行目录。');
+    }
     return value;
   }
   localUrl() { return `http://127.0.0.1:${this.config().port}`; }
@@ -73,7 +87,8 @@ class Service extends EventEmitter {
   log(level, message, source = 'system') {
     const event = { id: `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`, time: Date.now(), level, message: redact(message).slice(0, 1200), source };
     this.events.push(event); this.events = this.events.slice(-200);
-    try { fs.writeFileSync(this.eventFile, JSON.stringify(this.events)); } catch {}
+    // On a rejected runtime, keep the event in memory without following its paths.
+    try { secureRuntime(this.runtime); fs.writeFileSync(this.eventFile, JSON.stringify(this.events)); } catch {}
     this.emit('change');
   }
   snapshot() {
@@ -94,7 +109,7 @@ class Service extends EventEmitter {
       tunnelPid: this.children.tunnel?.pid || this.external.tunnel,
       local: this.local, remote: this.remote, doctor: this.doctor, startedAt: this.startedAt,
       summary: summarize(this.local, this.remote), settings: this.settings,
-      events: this.events.slice(-100), version: '0.1.0'
+      events: this.events.slice(-100), version: require('./package.json').version
     };
   }
   async ps(command, timeout = 15000) {
@@ -131,6 +146,7 @@ class Service extends EventEmitter {
     try { return await fn(); } finally { this.busy = null; this.emit('change'); }
   }
   environment() {
+    secureRuntime(this.runtime);
     const c = this.config();
     for (const root of c.allowedRoots) validateRoot(root, [], this.home, undefined, this.protectedPaths());
     const baseEnv = minimalEnvironment();
@@ -148,13 +164,16 @@ class Service extends EventEmitter {
     return env;
   }
   launch(name) {
+    secureRuntime(this.runtime);
+    if (!this.shellRiskAccepted()) throw Error('启动前请阅读并确认 Shell 权限与数据传输说明。');
+    if (fs.existsSync(path.join(this.runtime,'state','oauth-maintenance.lock'))) throw Error('OAuth 授权撤销尚未完成，请先检查维护锁。');
     const isDev = name === 'devspace';
     const environment = isDev ? this.environment() : minimalEnvironment();
     if (isDev) this.activeRoots = environment.DEVSPACE_ALLOWED_ROOTS.split(',');
     const binary = isDev ? this.node : this.cf;
     const args = isDev ? [this.cli, 'serve'] : ['tunnel', '--config', this.tunnelConfig, 'run', this.tunnelName];
-    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const output = fs.createWriteStream(path.join(this.logsDir, `console-${name}-${stamp}.log`));
+    const output = boundedLog(this.logsDir,name);
+    output.on('error',()=>this.log('warn','服务日志写入失败；请检查磁盘空间与权限。',name));
     const child = spawn(binary, args, { cwd: path.join(this.runtime, 'workspace'), env: environment, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
     this.children[name] = child;
     child.stdout.pipe(output, { end: false }); child.stderr.pipe(output, { end: false });
@@ -214,6 +233,17 @@ class Service extends EventEmitter {
   }
   async start() { await this.inspect(); return this.operation('正在启动', () => this.startInternal()); }
   async stop() { return this.operation('正在停止', () => this.stopInternal()); }
+  async revokeOAuth() {
+    return this.operation('正在撤销授权',async()=>{
+      await this.stopInternal();
+      secureRuntime(this.runtime);
+      const {stdout}=await exec(this.node,[path.join(__dirname,'scripts','revoke-oauth.cjs'),'--all'],{
+        windowsHide:true,timeout:30000,env:{...minimalEnvironment(),DEVSPACE_BRIDGE_HOME:this.runtime}
+      });
+      const counts=JSON.parse(stdout);
+      this.log('info',`已撤销全部 OAuth 授权（${counts.clients} 个客户端）。重新启动后需要在 ChatGPT 中重新添加并授权。`);
+    });
+  }
   async restart() {
     if (!this.desired) throw Error('请先启动服务，再应用并重启。');
     return this.operation('正在重启', async () => { await this.stopInternal(); await this.startInternal(); });
@@ -254,6 +284,7 @@ class Service extends EventEmitter {
     this.log('info', '已移除目录授权：' + folder);
   }
   writeConfig(previous, config) {
+    secureRuntime(this.runtime);
     if (fs.readFileSync(this.configPath, 'utf8') !== previous) throw Error('配置已被其他程序修改，请刷新后重试。');
     const tmp = this.configPath + '.console-tmp';
     fs.writeFileSync(tmp, JSON.stringify(config, null, 2) + '\n', { flag: 'wx' });
@@ -261,6 +292,7 @@ class Service extends EventEmitter {
     this.emit('change');
   }
   setRecovery(value) {
+    secureRuntime(this.runtime);
     this.settings.autoRecover = value === true;
     if (!this.settings.autoRecover) { for (const timer of this.retryTimers) clearTimeout(timer); this.retryTimers.clear(); }
     fs.writeFileSync(this.settingsFile, JSON.stringify(this.settings)); this.emit('change');

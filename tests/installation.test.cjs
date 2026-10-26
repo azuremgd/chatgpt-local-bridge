@@ -7,6 +7,7 @@ const {publicOrigin,minimalEnvironment,loadSettings,runtimeHome} = require('../i
 const {validateRoot,doctorHealthy} = require('../core.cjs');
 const {install,prepare} = require('../scripts/setup.cjs');
 const {findings} = require('../scripts/privacy-check.cjs');
+const {runtimeFixture,removeFixture} = require('./fixtures.cjs');
 
 test('HTTPS origin rejects credentials, paths and wildcard hosts',()=>{
   assert.equal(publicOrigin('https://devspace.example.com/'),'https://devspace.example.com');
@@ -33,8 +34,8 @@ test('project roots cannot contain runtime credentials or resolve to UNC paths',
   assert.equal(validateRoot('D:\\Bridge\\workspace',[],'C:\\Users\\example',p=>p,['D:\\Bridge\\config']),'D:\\Bridge\\workspace');
 });
 function setupFixture() {
-  const temp=fs.mkdtempSync(path.join(os.tmpdir(),'bridge-setup-test-'));
-  const runtime=path.join(temp,'runtime'); fs.mkdirSync(runtime);
+  const temp=runtimeFixture();
+  const runtime=path.join(temp,'runtime');
   fs.mkdirSync(path.join(temp,'devspace','dist'),{recursive:true});
   fs.writeFileSync(path.join(temp,'devspace','package.json'),JSON.stringify({name:'@waishnav/devspace',version:'1.0.8'}));
   const cli=path.join(temp,'devspace','dist','cli.js'); fs.writeFileSync(cli,'// fixture');
@@ -59,7 +60,7 @@ test('setup creates only isolated config, keeps native OAuth and refuses overwri
     assert.equal(tunnel.includes('path:'),false);
     assert.throws(()=>install(input,'C:\\Users\\example'),/already exists/);
     assert.equal(fs.readFileSync(input.credentialsFile,'utf8'),'{}');
-  } finally {fs.rmSync(temp,{recursive:true,force:true});}
+  } finally {removeFixture(temp);}
 });
 test('setup rejects unsupported version and weak password before writing files',()=>{
   const {temp,input}=setupFixture();
@@ -68,7 +69,7 @@ test('setup rejects unsupported version and weak password before writing files',
     fs.writeFileSync(path.join(temp,'devspace','package.json'),JSON.stringify({name:'@waishnav/devspace',version:'9.0.0'}));
     assert.throws(()=>prepare(input,'C:\\Users\\example'),/supports/);
     assert.equal(fs.existsSync(path.join(input.runtime,'config','auth.json')),false);
-  } finally {fs.rmSync(temp,{recursive:true,force:true});}
+  } finally {removeFixture(temp);}
 });
 test('privacy checker rejects runtime files, synthetic secrets, local identifiers and PNG metadata',()=>{
   assert.ok(findings('config/auth.json',Buffer.from('{}')).length);

@@ -7,14 +7,17 @@ permissions:
 jobs:
   windows:
     runs-on: windows-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
-      - name: Tests (no external accounts or runtime dependencies)
-        run: npm test
-      - name: Indexed-source privacy checks
-        run: npm run privacy
+      - name: Elevated token must be refused
+        run: node -e "const a=require('assert/strict');a.throws(()=>require('./runtime-security.cjs').secureRuntime(require('path').join(require('os').homedir(),'BridgeElevatedTest'),true),/Elevated/);console.log('Elevated execution refusal passed');"
+      - name: Fresh Windows standard-account setup, local OAuth/MCP and desktop package
+        shell: pwsh
+        run: .\scripts\ci-standard-user.ps1

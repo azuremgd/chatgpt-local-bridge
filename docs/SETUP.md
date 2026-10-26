@@ -75,6 +75,8 @@ npm start
 
 初始化脚本拒绝覆盖已存在的配置。首次初始化失败时，先检查错误；不要反复重装。脚本未写入任何配置时可以在它创建的空运行目录上重试。已写入部分配置时，保留目录供检查，换一个新的专用运行目录，避免意外覆盖凭证。
 
+初始化和桌面启动都会拒绝管理员令牌、敏感目录、目录联接和不合格的现有权限。不要手工预建运行目录；让程序在已存在的安全父目录下创建一个新的专用目录。旧版本创建的目录若仍有额外权限，不会被自动修改，请先保留原目录供审查，再使用新的目录完成初始化。
+
 ## 4. 配置 DNS 与完整 HTTP 路由
 
 确认子域名空闲后执行：
@@ -87,6 +89,14 @@ cloudflared tunnel route dns devspace-bridge devspace.example.com
 
 不能只映射 `/mcp`：OAuth 发现、授权和令牌路由也必须到达 DevSpace。不要把本地管理界面加入公网路由。
 
+启动前可检查 ingress 配置语法（自定义运行目录请替换路径）：
+
+```powershell
+cloudflared tunnel --config "$env:USERPROFILE\DevSpaceBridge\cloudflared\config.yml" ingress validate
+```
+
+语法通过不代表 DNS、OAuth 或网页工具调用已经成功。Cloudflare Access 可能影响 OAuth/MCP 客户端兼容性，本指南不自动开启。
+
 ## 5. 启动与诊断
 
 ```powershell
@@ -96,6 +106,8 @@ npm start
 ```
 
 或打开打包版的 `DevSpace Bridge Console.exe`。点击“启动连接”，再点击“检查连接”。应看到：
+
+首次启动连接时会出现 Shell 权限与数据传输确认：白名单不能限制 Shell 的全部访问能力，工具结果会通过 Cloudflare 传到 ChatGPT。取消时不会启动服务；确认会记录在本地运行目录。应用拒绝以管理员令牌运行。
 
 1. 本地 `/healthz`：HTTP 200。
 2. 公网 `/healthz`：HTTP 200。
@@ -125,5 +137,6 @@ https://devspace.example.com/mcp
 - 添加或移除目录：保存后“应用并重启”；移除授权不会删除文件。
 - 外部服务占用端口：在原来的启动器停止，点击重新检测。控制台不会强杀外部进程。
 - 重启电脑后：手动打开控制台并启动连接，没有开机自启。
+- 彻底撤销网页客户端：使用设置页的“撤销授权”，详见 [撤销与恢复](REVOKE.md)。改 Owner Password 或暂时停服不能代替撤销令牌。
 
 `examples/` 中的文件仅用于理解结构。它们不包含密码，不能替代初始化生成的有效配置。

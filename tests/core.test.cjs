@@ -5,6 +5,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { within, validateRoot, sameRoots, redact, summarize } = require('../core.cjs');
 const { Service, probe } = require('../service.cjs');
+const {runtimeFixture,removeFixture} = require('./fixtures.cjs');
 const home = 'C:\\Users\\example';
 const identity = x => x;
 test('directory boundaries are case insensitive and do not match siblings', () => {
@@ -31,13 +32,13 @@ test('redact common credentials and URL query values', () => {
   for (const secret of ['secret123', 'abcdef', 'code123', 'tunnel123']) assert.equal(clean.includes(secret), false);
 });
 test('directory edits preserve unrelated configuration and guard last root', async () => {
-  const temp = fs.mkdtempSync(path.join(os.tmpdir(), 'devspace-console-test-'));
+  const temp = runtimeFixture();
   const service = new Service(temp);
   service.home = 'C:\\Users\\console-test-fixture';
   try {
     service.configPath = path.join(temp, 'config.json');
     const project = path.join(temp, 'project'); fs.mkdirSync(project);
-    const original = {host:'127.0.0.1',port:17676,allowedRoots:['E:\\Existing'], publicBaseUrl:'https://devspace.example.com', allowedHosts:['devspace.example.com'], subagents:{enabled:false}, custom:{preserve:true}};
+    const original = {host:'127.0.0.1',port:17676,allowedRoots:['E:\\Existing'], publicBaseUrl:'https://devspace.example.com', allowedHosts:['devspace.example.com'], subagents:{enabled:false}, custom:{preserve:true},stateDir:path.join(temp,'state','devspace'),worktreeRoot:path.join(temp,'worktrees'),agentDir:path.join(temp,'disabled-agents')};
     fs.writeFileSync(service.configPath, JSON.stringify(original));
     const canonicalProject = await service.addRoot(project);
     assert.deepEqual(service.config().custom, original.custom);
@@ -48,7 +49,7 @@ test('directory edits preserve unrelated configuration and guard last root', asy
     await assert.rejects(service.removeRoot('E:\\Existing'));
     assert.deepEqual(service.config(), original);
     assert.throws(() => service.writeConfig('stale', original));
-  } finally { fs.rmSync(temp, {recursive:true,force:true}); }
+  } finally { removeFixture(temp); }
 });
 test('probe validates status and discovery payload', async () => {
   const server = require('node:http').createServer((req, res) => {

@@ -5,8 +5,9 @@ const path = require('node:path');
 const os = require('node:os');
 const {once} = require('node:events');
 const {Service} = require('../service.cjs');
+const {runtimeFixture,removeFixture} = require('./fixtures.cjs');
 function fixture(source) {
-  const runtime = fs.mkdtempSync(path.join(os.tmpdir(), 'devspace-lifecycle-'));
+  const runtime = runtimeFixture();
   fs.mkdirSync(path.join(runtime, 'workspace'));
   fs.mkdirSync(path.join(runtime, 'state'));
   const service = new Service(runtime);
@@ -14,11 +15,23 @@ function fixture(source) {
   service.cli = path.join(runtime, 'worker.cjs');
   fs.writeFileSync(service.cli, source);
   service.environment = () => ({...process.env, DEVSPACE_ALLOWED_ROOTS:'E:\\fixture'});
-  return {service, cleanup:()=>fs.rmSync(runtime,{recursive:true,force:true})};
+  return {service, cleanup:()=>removeFixture(runtime)};
 }
+
+test('worker cannot launch before Shell risk acknowledgement; consent survives reopening', async () => {
+  const {service,cleanup}=fixture('setInterval(()=>{},1000);');
+  try {
+    assert.throws(()=>service.launch('devspace'),/Shell/);
+    assert.equal(service.children.devspace,undefined);
+    service.acknowledgeShellRisk();
+    const reopened=new Service(service.runtime);
+    assert.equal(reopened.shellRiskAccepted(),true);
+  } finally {await service.stopInternal();cleanup();}
+});
 test('stop terminates owned worker and cancels scheduled recovery', async () => {
   const {service,cleanup}=fixture('setInterval(()=>{},1000);');
   try {
+    service.acknowledgeShellRisk();
     service.desired=true;
     service.launch('devspace');
     const worker=service.children.devspace;
@@ -37,6 +50,7 @@ test('stop terminates owned worker and cancels scheduled recovery', async () => 
 test('crash recovery is queued, can be cancelled, and stops after three retries', async () => {
   const {service,cleanup}=fixture('process.exit(2);');
   try {
+    service.acknowledgeShellRisk();
     service.desired=true;
     service.launch('devspace');
     await once(service.children.devspace,'close');
