@@ -24,11 +24,9 @@ $allowed=@($sid.Value,'S-1-5-18')
 $trustedAncestors=@($sid.Value,'S-1-5-18','S-1-5-32-544','S-1-5-80-956008885-3418522649-1831038044-1853292631-2271478464')
 $runtimeFull=FullPath $RuntimeDirectory
 $sourceFull=FullPath $SourceDirectory
-$profileDirectory=[Environment]::GetFolderPath('UserProfile')
-if (-not $profileDirectory) {
-  $profileDirectory=(Get-ItemProperty -LiteralPath ('Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\'+$sid.Value) -Name ProfileImagePath).ProfileImagePath
-  $profileDirectory=[Environment]::ExpandEnvironmentVariables($profileDirectory)
-}
+$profileDirectory=[Microsoft.Win32.Registry]::GetValue(('HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\'+$sid.Value),'ProfileImagePath',$null)
+if (-not $profileDirectory) { Reject 'Windows user profile is unavailable.' }
+$profileDirectory=[Environment]::ExpandEnvironmentVariables($profileDirectory)
 $userHome=FullPath $profileDirectory
 if ($runtimeFull.Length -le 3 -or (ContainsPath $runtimeFull $userHome) -or (ContainsPath $runtimeFull $sourceFull) -or (ContainsPath $sourceFull $runtimeFull)) { Reject 'Runtime overlaps a protected root, home or source directory.' }
 $sensitive=@('AppData','.ssh','.aws','.azure','.cloudflared','.devspace','.codex','.gnupg','.kube') | ForEach-Object { Join-Path $userHome $_ }
@@ -43,7 +41,8 @@ while ($cursor) {
   if (Test-Path -LiteralPath $cursor) {
     $item=Get-Item -LiteralPath $cursor -Force
     if (-not $item.PSIsContainer -or ($item.Attributes -band [IO.FileAttributes]::ReparsePoint)) { Reject 'Runtime or an ancestor is a link or not a directory.' }
-    $acl=Get-Acl -LiteralPath $cursor
+    # Read raw security descriptors without account-name translation or formatting.
+    $acl=[IO.Directory]::GetAccessControl($cursor)
     if ($acl.GetOwner([Security.Principal.SecurityIdentifier]).Value -notin $trustedAncestors) { Reject 'An ancestor directory is owned by another account.' }
     foreach($ace in $acl.GetAccessRules($true,$true,[Security.Principal.SecurityIdentifier])) {
       if ($ace.AccessControlType -eq 'Allow' -and $ace.IdentityReference.Value -notin $trustedAncestors -and -not ($ace.PropagationFlags -band [Security.AccessControl.PropagationFlags]::InheritOnly)) {
@@ -57,7 +56,7 @@ while ($cursor) {
 function AssertPrivate([string]$target,[bool]$root=$false) {
   $item=Get-Item -LiteralPath $target -Force
   if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) { Reject 'Runtime contains a junction or symbolic link.' }
-  $acl=Get-Acl -LiteralPath $target
+  $acl=if($item.PSIsContainer){[IO.Directory]::GetAccessControl($target)}else{[IO.File]::GetAccessControl($target)}
   if ($acl.GetOwner([Security.Principal.SecurityIdentifier]).Value -notin $allowed) { Reject 'Runtime ownership is not private.' }
   if ($root -and -not $acl.AreAccessRulesProtected) { Reject 'Runtime ACL inheritance is not restricted.' }
   $grants=@{}

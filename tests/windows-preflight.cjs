@@ -21,13 +21,13 @@ try {
   let instrumented=fs.readFileSync(path.join(root,'scripts','RuntimeSecurity.ps1'),'utf8');
   for(const [phase,needle] of [
     ['identity','$identity=[Security.Principal.WindowsIdentity]::GetCurrent()'],
-    ['known-folder',"$profileDirectory=[Environment]::GetFolderPath('UserProfile')"],
+    ['profile-registry','$profileDirectory=[Microsoft.Win32.Registry]::GetValue'],
     ['sensitive-paths',"$sensitive=@('AppData'"],
-    ['ancestor-acl','$acl=Get-Acl -LiteralPath $cursor'],
+    ['ancestor-acl','$acl=[IO.Directory]::GetAccessControl($cursor)'],
     ['create-private','[IO.Directory]::CreateDirectory($runtimeFull,$privateAcl)'],
-    ['verify-private','$acl=Get-Acl -LiteralPath $target'],
+    ['verify-private','$acl=if($item.PSIsContainer)'],
     ['scan-children','$pending=[Collections.Generic.Stack[string]]::new()']
-  ]) instrumented=instrumented.replace(needle,`[Console]::WriteLine('Guard phase: ${phase}');\n${needle}`);
+  ]) instrumented=instrumented.replace(needle,`[Console]::WriteLine('Guard phase: ${phase} '+[DateTime]::UtcNow.ToString('o'));\n${needle}`);
   const diagnostic=path.join(os.tmpdir(),'bridge-guard-trace-'+randomUUID()+'.ps1');
   fs.writeFileSync(diagnostic,instrumented,{flag:'wx'});
   try {
