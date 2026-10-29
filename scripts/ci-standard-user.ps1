@@ -58,7 +58,7 @@ Run { npm.cmd run test:mcp }
 Run { npm.cmd run test:desktop }
 Run { npm.cmd run package }
 $version=(Get-Content -LiteralPath package.json -Raw | ConvertFrom-Json).version
-$exe=Join-Path $PWD ("dist\chatgpt-local-bridge-$version-win32-x64\ChatGPT Local Bridge.exe")
+$exe=Join-Path $PWD ("dist\chatgpt-locallink-$version-win32-x64\ChatGPT LocalLink.exe")
 Run { node.exe tests/desktop-smoke.cjs $exe }
 Run { npm.cmd run privacy }
 '@ | Set-Content -LiteralPath $script -Encoding UTF8

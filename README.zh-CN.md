@@ -1,4 +1,4 @@
-# ChatGPT Local Bridge｜ChatGPT 本地桥
+# ChatGPT LocalLink｜ChatGPT 本地通
 
 <p align="center">
   <a href="./README.md"><sub>EN</sub> English</a>
@@ -10,7 +10,7 @@
 
 读取文件、修改代码、运行命令、执行测试，把对话里的想法落实到电脑上的真实文件。
 
-ChatGPT Local Bridge 是一个开源的 Windows 本地连接控制台。它通过 **DevSpace MCP + Cloudflare Tunnel**，将 ChatGPT 网页端与你授权的本地项目连接起来，并提供图形化的启动、停止、目录授权和连接诊断。
+ChatGPT LocalLink 是一个开源的 Windows 本地连接控制台。它通过 **DevSpace MCP + Cloudflare Tunnel**，将 ChatGPT 网页端与你授权的本地项目连接起来，并提供图形化的启动、停止、目录授权和连接诊断。
 
 *Connect ChatGPT web to your local files, projects, and tools.*
 
@@ -39,7 +39,7 @@ ChatGPT Local Bridge 是一个开源的 Windows 本地连接控制台。它通�
 
 文件与命令工具由 DevSpace 提供；本项目负责把连接、权限配置和日常运行管理整合到本地控制台。具体任务还取决于 ChatGPT 的工具支持、项目依赖和电脑上已安装的软件。
 
-## 为什么使用本地桥
+## 为什么使用本地通
 
 - **直接处理真实项目**：读取当前文件、把修改写回原项目，再使用本机环境验证结果，减少反复上传文件和复制粘贴。
 - **桥接层不设调用配额**：本项目不额外设置每日或每月工具调用次数，也不按次收费。ChatGPT 平台自身的消息与工具额度、Cloudflare 服务规则及本机资源限制仍然适用。
@@ -90,8 +90,8 @@ DevSpace 监听本机回环地址，Cloudflare Named Tunnel 提供固定 HTTPS �
 获取源码并安装控制台依赖：
 
 ```powershell
-git clone https://github.com/azuremgd/chatgpt-local-bridge.git
-cd chatgpt-local-bridge
+git clone https://github.com/azuremgd/chatgpt-locallink.git
+cd chatgpt-locallink
 npm ci
 ```
 
@@ -127,7 +127,7 @@ npm run test:desktop
 npm run package
 ```
 
-桌面程序生成在 `dist/chatgpt-local-bridge-0.1.1-win32-x64/`。请保留整个目录，按安装指南配置后运行其中的 `ChatGPT Local Bridge.exe`。构建输出包含 Electron 运行时；Node.js、DevSpace、Git Bash 和 cloudflared 仍需单独安装。
+桌面程序生成在 `dist/chatgpt-locallink-0.1.1-win32-x64/`。请保留整个目录，按安装指南配置后运行其中的 `ChatGPT LocalLink.exe`。构建输出包含 Electron 运行时；Node.js、DevSpace、Git Bash 和 cloudflared 仍需单独安装。
 
 重新构建时可以使用 `npm run package -- reviewed` 生成独立输出目录。打包过程不会复制本机运行配置、凭证、日志或项目内容。
 

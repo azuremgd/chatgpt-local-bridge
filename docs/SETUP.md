@@ -105,7 +105,7 @@ npm test
 npm start
 ```
 
-或打开打包版的 `ChatGPT Local Bridge.exe`。点击“启动连接”，再点击“检查连接”。应看到：
+或打开打包版的 `ChatGPT LocalLink.exe`。点击“启动连接”，再点击“检查连接”。应看到：
 
 首次启动连接时会出现 Shell 权限与数据传输确认：白名单不能限制 Shell 的全部访问能力，工具结果会通过 Cloudflare 传到 ChatGPT。取消时不会启动服务；确认会记录在本地运行目录。应用拒绝以管理员令牌运行。
 
