@@ -38,7 +38,7 @@ function go(page) {
   $('breadcrumb-title').textContent = titles[page]; $('main').scrollTop = 0;
 }
 async function action(command, payload) {
-  if (!window.consoleAPI) { toast('请通过 ChatGPT 本地通桌面应用使用这些功能。', true); return; }
+  if (!window.consoleAPI) { toast('请通过 ChatGPT 本地桥桌面应用使用这些功能。', true); return; }
   try {
     const result = await window.consoleAPI.invoke(command, payload);
     if (!result.ok) throw Error(result.error);

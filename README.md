@@ -1,4 +1,4 @@
-# ChatGPT LocalLink
+# ChatGPT Local Bridge
 
 <p align="center">
   <a href="./README.md"><sub>EN</sub> English</a>
@@ -10,7 +10,7 @@
 
 Read files, edit code, run commands, and execute tests—turn ideas from a conversation into changes on your computer.
 
-ChatGPT LocalLink is an open-source Windows control panel that connects ChatGPT web to local projects you authorize through **DevSpace MCP + Cloudflare Tunnel**. It brings connection management, project access, and diagnostics into a desktop interface.
+ChatGPT Local Bridge is an open-source Windows control panel that connects ChatGPT web to local projects you authorize through **DevSpace MCP + Cloudflare Tunnel**. It brings connection management, project access, and diagnostics into a desktop interface.
 
 [Get started](docs/SETUP.md) · [Troubleshooting](docs/TROUBLESHOOTING.md) · [Revoke access](docs/REVOKE.md)
 
@@ -39,7 +39,7 @@ For example, select the connection in a ChatGPT conversation and ask:
 
 DevSpace provides the file and command tools. This project manages the connection, access configuration, and day-to-day operation. Individual tasks also depend on ChatGPT's tool support, project dependencies, and the software installed on your computer.
 
-## Why use LocalLink?
+## Why use Local Bridge?
 
 - **Work with real projects**: Read current files, save edits directly to the project, and verify them in your local environment, with less repeated uploading and copying between tools.
 - **No bridge-imposed usage quota**: This project imposes no daily or monthly tool-call quota and charges no per-call fee. ChatGPT's own message and tool limits, Cloudflare's service rules, and local resource limits still apply.
@@ -90,8 +90,8 @@ You will need:
 Clone the repository and install the console dependencies:
 
 ```powershell
-git clone https://github.com/azuremgd/chatgpt-locallink.git
-cd chatgpt-locallink
+git clone https://github.com/azuremgd/chatgpt-local-bridge.git
+cd chatgpt-local-bridge
 npm ci
 ```
 
@@ -127,7 +127,7 @@ npm run test:desktop
 npm run package
 ```
 
-The desktop build is written to `dist/chatgpt-locallink-0.1.1-win32-x64/`. Keep the entire directory together. After completing setup, run `ChatGPT LocalLink.exe` inside it. The build includes the Electron runtime; Node.js, DevSpace, Git Bash, and cloudflared must still be installed separately.
+The desktop build is written to `dist/chatgpt-local-bridge-0.1.1-win32-x64/`. Keep the entire directory together. After completing setup, run `ChatGPT Local Bridge.exe` inside it. The build includes the Electron runtime; Node.js, DevSpace, Git Bash, and cloudflared must still be installed separately.
 
 For another build, use `npm run package -- reviewed` to create a separate output directory. Packaging does not copy local runtime configuration, credentials, logs, or project contents.
 

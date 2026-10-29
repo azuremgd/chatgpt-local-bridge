@@ -1,6 +1,6 @@
 {
-  "name": "chatgpt-locallink",
-  "productName": "ChatGPT LocalLink",
+  "name": "chatgpt-local-bridge",
+  "productName": "ChatGPT Local Bridge",
   "version": "0.1.1",
   "private": true,
   "license": "MIT",

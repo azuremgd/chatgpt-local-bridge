@@ -9,7 +9,7 @@ const { secureRuntime } = require('./runtime-security.cjs');
 
 const runtime = runtimeHome();
 try { secureRuntime(runtime, true); }
-catch (error) { dialog.showErrorBox('ChatGPT 本地通安全检查未通过', error.message); app.exit(1); }
+catch (error) { dialog.showErrorBox('ChatGPT 本地桥安全检查未通过', error.message); app.exit(1); }
 const appState = path.join(runtime, 'state', 'console');
 fs.mkdirSync(appState, { recursive: true });
 fs.mkdirSync(path.join(appState, 'crashes'), { recursive: true });
@@ -26,7 +26,7 @@ else {
   app.whenReady().then(async () => {
     service = new Service(runtime);
     window = new BrowserWindow({ width: 1240, height: 860, minWidth: 1000, minHeight: 720,
-      title: 'ChatGPT LocalLink', icon: iconPath, backgroundColor: '#f6f7f8', show: false,
+      title: 'ChatGPT Local Bridge', icon: iconPath, backgroundColor: '#f6f7f8', show: false,
       autoHideMenuBar: true, webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, webSecurity: true }
     });
     window.setMenu(null);
@@ -46,13 +46,13 @@ else {
     await service.initialize();
     powerMonitor.on('resume', () => { service.log('info', '电脑已唤醒，正在重新检查连接。'); service.poll().then(() => service.diagnose()).catch(() => {}); });
     if (service.local?.ok) service.diagnose().catch(() => {});
-  }).catch(error => { dialog.showErrorBox('ChatGPT 本地通无法启动', error.message); quitting = true; app.quit(); });
+  }).catch(error => { dialog.showErrorBox('ChatGPT 本地桥无法启动', error.message); quitting = true; app.quit(); });
 }
 function show() { if (window && !window.isDestroyed()) { if (window.isMinimized()) window.restore(); window.show(); window.focus(); } }
 function updateTray() {
   if (!tray || !service) return;
   const s = service.snapshot();
-  tray.setToolTip('ChatGPT 本地通 · ' + (s.summary?.title || '等待配置'));
+  tray.setToolTip('ChatGPT 本地桥 · ' + (s.summary?.title || '等待配置'));
   tray.setContextMenu(Menu.buildFromTemplate([
     { label: '打开控制台', click: show },
     { label: s.summary?.title || '等待配置', enabled: false }, { type: 'separator' },
@@ -63,7 +63,7 @@ function updateTray() {
 }
 function notifyError(error) { show(); dialog.showErrorBox('操作未完成', error.message); }
 async function confirm(message, detail, accept) {
-  const result = await dialog.showMessageBox(window, { type: 'question', title: 'ChatGPT 本地通', message, detail, buttons: [accept, '取消'], defaultId: 1, cancelId: 1, noLink: true });
+  const result = await dialog.showMessageBox(window, { type: 'question', title: 'ChatGPT 本地桥', message, detail, buttons: [accept, '取消'], defaultId: 1, cancelId: 1, noLink: true });
   return result.response === 0;
 }
 async function quit() {
