@@ -1,6 +1,10 @@
 # ChatGPT Local Bridge｜ChatGPT 本地桥
 
-**简体中文** · [English](README.en.md)
+<p align="center">
+  <a href="./README.md"><sub>CN</sub> 简体中文</a>
+  &nbsp;·&nbsp;
+  <a href="./README.en.md"><sub>EN</sub> English</a>
+</p>
 
 **让 ChatGPT 网页端，直接访问并操作你的本地项目。**
 

@@ -1,6 +1,10 @@
 # ChatGPT Local Bridge
 
-[简体中文](README.md) · **English**
+<p align="center">
+  <a href="./README.md"><sub>CN</sub> 简体中文</a>
+  &nbsp;·&nbsp;
+  <a href="./README.en.md"><sub>EN</sub> English</a>
+</p>
 
 **Let ChatGPT web access and work with your local projects.**
 
