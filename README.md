@@ -1,5 +1,7 @@
 # ChatGPT Local Bridge｜ChatGPT 本地桥
 
+**简体中文** · [English](README.en.md)
+
 **让 ChatGPT 网页端，直接访问并操作你的本地项目。**
 
 读取文件、修改代码、运行命令、执行测试，把对话里的想法落实到电脑上的真实文件。
