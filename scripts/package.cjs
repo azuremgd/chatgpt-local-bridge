@@ -27,6 +27,6 @@ fs.writeFileSync(path.join(destination,'Create-Shortcut.ps1'), [
   '$bridgeLink.IconLocation=(Join-Path $PSScriptRoot "resources\\app\\assets\\icon.ico")+",0"',
   '$bridgeLink.Save()'
 ].join('\r\n'));
-for(const name of ['README.md','README.en.md']) fs.copyFileSync(path.join(root,name),path.join(destination,name));
+for(const name of ['README.md','README.zh-CN.md']) fs.copyFileSync(path.join(root,name),path.join(destination,name));
 for(const name of ['docs','SECURITY.md','PRIVACY.md','LICENSE','THIRD_PARTY_NOTICES.md','CONTRIBUTING.md']) fs.cpSync(path.join(root,name),path.join(destination,name),{recursive:true});
 console.log('Built versioned Windows package. No runtime configuration or credential files were copied.');
