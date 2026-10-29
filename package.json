@@ -1,10 +1,10 @@
 {
-  "name": "devspace-bridge-console",
-  "productName": "DevSpace Bridge Console",
+  "name": "chatgpt-local-bridge",
+  "productName": "ChatGPT Local Bridge",
   "version": "0.1.1",
   "private": true,
   "license": "MIT",
-  "description": "A local Windows console connecting ChatGPT web to authorized projects through DevSpace and Cloudflare Tunnel",
+  "description": "Connect ChatGPT web to local projects and tools through DevSpace MCP and Cloudflare Tunnel",
   "main": "main.cjs",
   "engines": {
     "node": ">=22.19 <27"

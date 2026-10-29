@@ -1,8 +1,12 @@
-# DevSpace Bridge Console
+# ChatGPT Local Bridge｜ChatGPT 本地桥
 
-A local Windows control panel for connecting **ChatGPT web → Cloudflare Named Tunnel → DevSpace → explicitly authorized project folders**.
+**Connect ChatGPT web to your local projects and tools.**
 
-一个面向 Windows 的本地连接控制台：用图形界面管理 DevSpace、Cloudflare Tunnel、项目目录授权和连接诊断。
+A local Windows control panel for **ChatGPT web → Cloudflare Named Tunnel → DevSpace MCP → explicitly authorized project folders**.
+
+**让 ChatGPT 网页端连接你的本地项目与工具。**
+
+在 Windows 本地启动连接、选择授权项目、检查连通状态，并在需要时撤销网页授权。使用 DevSpace MCP 与 Cloudflare Named Tunnel，保留 Owner Password 和 OAuth 认证。
 
 > Independent community project. Not an official OpenAI, Cloudflare, or DevSpace product. DevSpace is developed by [Waishnav](https://github.com/Waishnav/devspace).
 
@@ -56,9 +60,9 @@ To build an unpacked desktop application:
 npm run package
 ```
 
-The result is `dist/devspace-bridge-console-0.1.1-win32-x64/`. Keep that directory together. It includes `Setup.ps1`, `Create-Shortcut.ps1` and the desktop executable. Packaging explicitly copies source assets, never the user's runtime configuration, logs, project contents or credentials. It does not create or upload a release and refuses to overwrite an existing build.
+The result is `dist/chatgpt-local-bridge-0.1.1-win32-x64/`. Keep that directory together. It includes `Setup.ps1`, `Create-Shortcut.ps1` and the desktop executable. Packaging explicitly copies source assets, never the user's runtime configuration, logs, project contents or credentials. It does not create or upload a release and refuses to overwrite an existing build.
 
-For a subsequent build, use a distinct output suffix, for example `npm run package -- reviewed`. This leaves existing builds intact and creates `dist/devspace-bridge-console-0.1.1-reviewed-win32-x64/`.
+For a subsequent build, use a distinct output suffix, for example `npm run package -- reviewed`. This leaves existing builds intact and creates `dist/chatgpt-local-bridge-0.1.1-reviewed-win32-x64/`.
 
 `npm run test:desktop` executes the real Electron main entry in a fresh private runtime. Pass a packaged executable to `node tests/desktop-smoke.cjs` to test the package. The OAuth integration test additionally requires `BRIDGE_TEST_DEVSPACE_CLI` pointing to a separately installed 1.0.8 CLI. A fresh runtime on an existing machine is not a clean-Windows installation test, and neither test proves an actual ChatGPT OAuth login/tool call.
 
