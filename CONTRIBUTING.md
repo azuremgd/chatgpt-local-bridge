@@ -1,5 +1,11 @@
 # Contributing
 
+## Reporting an issue
+
+Check the [troubleshooting guide](docs/TROUBLESHOOTING.md) first. If the issue persists, include your Windows and Node.js versions, the console version, steps to reproduce, and the expected and actual behavior. Replace local paths and domains with placeholders, and review any diagnostic output before sharing it. Never attach passwords, tunnel credentials, OAuth state, or unredacted runtime logs. For security issues, follow [SECURITY.md](SECURITY.md).
+
+## Development
+
 Use Windows x64 and Node 24 LTS. Install dependencies with `npm ci`, run `npm test`, and stage only reviewed source files before `npm run privacy`.
 
 Keep local domains, project roots, screenshots, setup credentials and runtime data outside the checkout. Use `example.com` and synthetic paths/UUIDs in fixtures. Do not add a hardcoded developer home path or a personal email address to examples or documentation.

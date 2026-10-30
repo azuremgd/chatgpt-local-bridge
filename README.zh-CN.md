@@ -135,6 +135,8 @@ npm run package
 
 ## 致谢与许可
 
+本项目由 [@azuremgd](https://github.com/azuremgd) 发起并维护。欢迎提交问题反馈、改进文档或参与开发，详见 [CONTRIBUTING.md](CONTRIBUTING.md)。
+
 本项目是独立社区项目，与 OpenAI、Cloudflare 或 DevSpace 官方无隶属关系。本地 MCP 能力由 [Waishnav / DevSpace](https://github.com/Waishnav/devspace) 提供，公网连接使用 [Cloudflare Tunnel](https://github.com/cloudflare/cloudflared)。
 
 本项目代码与应用图标采用 [MIT 许可证](LICENSE)。第三方组件保留各自的许可证，详见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。

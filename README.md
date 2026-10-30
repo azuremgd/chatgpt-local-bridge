@@ -135,6 +135,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) to contribute.
 
 ## Acknowledgments and license
 
+Created and maintained by [@azuremgd](https://github.com/azuremgd). Bug reports, documentation improvements, and contributions are welcome; see [CONTRIBUTING.md](CONTRIBUTING.md).
+
 This is an independent community project, with no official affiliation with OpenAI, Cloudflare, or DevSpace. Local MCP capabilities are provided by [Waishnav / DevSpace](https://github.com/Waishnav/devspace), and the public connection uses [Cloudflare Tunnel](https://github.com/cloudflare/cloudflared).
 
 This project's code and application icon are available under the [MIT license](LICENSE). Third-party components retain their respective licenses; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
